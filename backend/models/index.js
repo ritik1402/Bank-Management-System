@@ -1,13 +1,14 @@
 import path from "path";
 import Sequelize from "sequelize";
 import dotenv from "dotenv";
-import { fileURLToPath } from "url";
+// import { fileURLToPath } from "url";
 import UserModel from "./user.js"; 
-
+import Role from './role.js';
+import BankDetails from "./bankDetail.js";
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
 
 const sequelize = new Sequelize(
@@ -22,6 +23,8 @@ const sequelize = new Sequelize(
 
 
 const User = UserModel(sequelize); 
+const Role = Role(sequelize);
+const BankDetails = BankDetails(sequelize);
 
 
-export { sequelize, User };
+export { sequelize, User, Role, BankDetails };
