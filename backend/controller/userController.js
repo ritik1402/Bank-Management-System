@@ -3,6 +3,7 @@ import Role from "../models/role.js";
 import BankDetails from "../models/bankDetail.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { parse } from "dotenv";
 
 function generateAccountNumber() {
   return Math.floor(
@@ -73,7 +74,7 @@ export const loginUser = async (req, res) => {
     
 
     if (!user) return res.status(404).json({ error: "User not found" });
-    console.log("user found in db ============",user)
+    // console.log("user found in db ============",user);
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ error: "Wrong password" });
@@ -173,3 +174,121 @@ export const approveDelete = async (req, res) => {
     res.status(500).json({ error: "Failed to delete user" });
   }
 };
+
+
+
+export const checkBalance = async (req, res) => {
+  try {
+    const bankDetails = await BankDetails.findOne({ where: { userId: req.user.id } });
+    
+    if (!bankDetails) {
+      return res.status(404).json({ error: "Bank detaails not found" });
+    }
+
+    res.json({ balance: bankDetails.balance });
+  } catch (err) {
+    console.error("Error in checkBalance:", err);
+    res.status(500).json({ error: "Could not retreive balance" });
+  }
+};
+
+export const withdraw = async(req,res) =>{
+  try{
+    const bankDetails = await BankDetails.findOne({where: {userId: req.user.id}})
+    if(!bankDetails) return res.status(404).json({error:"bank detials not found"});   
+    const  amount = req.body.amount; 
+   
+    if(amount <= 0) return res.status(400).json({error:"Invalid amount"});
+    if(amount > bankDetails.balance) return res.status(400).json({error:"Insufficient balance"});
+    const newBalance = bankDetails.balance - amount;
+    await bankDetails.update({balance:newBalance});
+    res.json({message:"Withdrawal successful",newBalance});
+  }
+        catch (err){
+    console.error("Error in withdraw:",err)
+    res.status(500).json({error: "could not withdraw money",err})
+  }
+};
+
+export const credit = async (req,res)=>{
+  try{
+const bankDetails = await BankDetails.findOne({where : {
+  userId: req.user.id
+  
+}})
+// console.log(bankDetails);
+if(!bankDetails) return res.status(404).json({error: "bank details not found"});
+
+const amount = req.body.amount;
+ console.log(amount,typeof(amount));
+if(amount <= 0) return res.status(400).json({error: "Invalid amount"});
+
+const newBalance =  parseFloat(bankDetails.balance)  + amount;
+
+console.log(bankDetails.balance);
+console.log(amount);
+console.log(newBalance);
+await bankDetails.update({balance:newBalance});
+
+res.json({message:"credit successfull",newBalance});
+
+  }
+  catch (err){
+    console.log("Error in  credit balance",err);
+    res.status(500).json({error:"counld not credit balance",err})
+  }
+}
+
+export const transfer = async (req,res)=>{
+  try {
+
+  
+  const bankDetail = await BankDetails.findOne({where:{
+    userId : req.user.id
+  }})
+  if(!bankDetail)return res.status(404).json({error: "bank detials not found"});
+  const amount = req.body.amount;
+
+  const accountNumber_toTransfer = req.body.accountNumberTransfer;
+  const bankDetailsTransfer = await BankDetails.findOne({where: {
+    accountNumber: accountNumber_toTransfer
+  }});
+  if(!bankDetailsTransfer)return res.status(404).json({error: "No account found"});
+  const newBalance = bankDetail.balance - amount;
+  const newBalanceTransfer = bankDetailsTransfer.balance + amount;
+  await bankDetail.update({balance:newBalance});
+  await bankDetailsTransfer.update({balance:newBalanceTransfer});
+  res.json({message:"transfer successful"});
+  }
+
+  catch(err) {
+    console.log("Error in tranfser");
+    res.status(500).json({error:"could not transfer money",err})
+  }
+
+}
+
+export const seeBalance = async (req, res) => {
+  console.log("api called succesfully");
+  try {
+    
+    const {accNumber} = req.params;
+    // console.log(accNumber);
+    const bankDetails = await BankDetails.findOne({ where: { accountNumber: accNumber },
+    });
+    
+    if (!bankDetails) {
+      return res.status(404).json({ error: "Bank details not found" });
+    }
+
+    res.json({ balance: bankDetails.balance });
+  } catch (err) {
+    console.error("Error in checkBalance:", err);
+    res.status(500).json({ error: "Could not retreive balance",err });
+  }
+};
+
+
+
+
+  
